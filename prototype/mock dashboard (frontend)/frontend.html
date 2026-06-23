@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GRIDLOCK — Control Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Tokens — black + cyan accent theme ───────────────────────── */
+  :root {
+    --bg-1:      #07080a;
+    --bg-2:      #000000;
+    --cyan:      #2cc4f0;
+    --glass:     rgba(255,255,255,.055);
+    --glass-2:   rgba(255,255,255,.10);
+    --glass-bd:  rgba(255,255,255,.18);
+    --glass-bd-soft: rgba(255,255,255,.10);
+    --white:     #ffffff;
+    --text:      #f3f5f7;
+    --muted:     rgba(255,255,255,.62);
+    --muted-2:   rgba(255,255,255,.40);
+    --accent:    #ffffff;
+    --accent-ink:#0a0d10;
+    --green:     #36e0b0;
+    --red:       #ff7a7a;
+    --radius:    7px;
+    --radius-sm: 4px;
+    --font-display: 'Lora', Georgia, serif;
+    --font-body: 'Inter', -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: radial-gradient(ellipse at 20% 0%, #10141a 0%, var(--bg-1) 45%, var(--bg-2) 100%);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── Moving low-opacity box pattern ─────────────────────── */
+  .bg-pattern {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .bg-pattern .pbox {
+    position: absolute;
+    border: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.02);
+    border-radius: 8px;
+    animation: drift linear infinite;
+  }
+  .bg-pattern .pbox.cy { border-color: rgba(44,196,240,.16); background: rgba(44,196,240,.035); }
+  @keyframes drift {
+    0%   { transform: translate(0,0) rotate(0deg); opacity: .5; }
+    25%  { opacity: .85; }
+    50%  { transform: translate(38px,-26px) rotate(6deg); opacity: .45; }
+    75%  { opacity: .8; }
+    100% { transform: translate(0,0) rotate(0deg); opacity: .5; }
+  }
+
+  /* ── Bottom ambient glow, echoing button accent colours ───── */
+  .bottom-glow {
+    position: fixed;
+    left: 0; right: 0; bottom: -10%;
+    height: 38vh;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 32% 100% at 22% 100%, rgba(54,224,176,.10), transparent 70%),
+      radial-gradient(ellipse 32% 100% at 52% 100%, rgba(255,255,255,.07), transparent 70%),
+      radial-gradient(ellipse 32% 100% at 80% 100%, rgba(44,196,240,.10), transparent 70%);
+  }
+
+  /* ── Header ─────────────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 22px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .logo-mark {
+    width: 38px; height: 38px;
+    background: var(--white);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent-ink);
+    letter-spacing: .02em;
+    flex-shrink: 0;
+  }
+  .logo-text { display: flex; flex-direction: column; line-height: 1.15; }
+  .logo-text .name { font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: .01em; }
+  .logo-text .sub  { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+  .header-nav { display: flex; gap: 22px; margin-left: 18px; }
+  .header-nav span {
+    font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); padding-bottom: 3px; border-bottom: 1px solid transparent;
+  }
+  .header-nav span.cur { color: var(--white); border-bottom-color: var(--white); }
+
+  .status-pill {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--glass);
+    border: 1px solid var(--glass-bd-soft);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 5px 12px 5px 10px;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted-2);
+    transition: background .4s;
+  }
+  .status-dot.live { background: var(--green); box-shadow: 0 0 7px var(--green); }
+  .status-dot.running { background: #ffe18a; box-shadow: 0 0 7px #ffe18a; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  #status-label { font-size: 10.5px; letter-spacing: .06em; color: var(--white); }
+
+  /* ── Layout: single page, no scroll ────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 268px 1fr;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    padding: 0 18px 14px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Glass panel base ──────────────────────────────────── */
+  .glass {
+    background: var(--glass);
+    border: 1px solid var(--glass-bd-soft);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: var(--radius);
+  }
+
+  /* ── Sidebar ────────────────────────────────────────────── */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px 13px;
+  }
+  .section-title {
+    font-size: 9.5px;
+    letter-spacing: .12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 7px;
+    font-weight: 600;
+  }
+  .section-title em { font-style: normal; color: var(--muted-2); font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+  .connect-row { display: flex; gap: 6px; }
+  input[type="text"], input[type="number"], textarea {
+    background: rgba(255,255,255,.10);
+    border: 1px solid var(--glass-bd-soft);
+    border-radius: var(--radius-sm);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 11.5px;
+    padding: 7px 9px;
+    width: 100%;
+    outline: none;
+    transition: border-color .2s, background .2s;
+  }
+  input::placeholder, textarea::placeholder { color: rgba(255,255,255,.42); }
+  input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+    border-color: var(--white);
+    background: rgba(255,255,255,.16);
+  }
+  textarea { resize: none; min-height: 34px; font-size: 10.5px; line-height: 1.4; }
+
+  /* ── Buttons ───────────────────────────────────────────── */
+  button {
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    padding: 8px 13px;
+    transition: opacity .15s, transform .1s, background .15s;
+    white-space: nowrap;
+  }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .38; cursor: default; }
+  .btn-accent  { background: var(--white); color: var(--accent-ink); }
+  .btn-accent:not(:disabled):hover { background: #f0fbff; }
+  .btn-ghost   { background: rgba(255,255,255,.08); border: 1px solid var(--glass-bd-soft); color: var(--white); }
+  .btn-ghost:hover { background: rgba(255,255,255,.16); }
+  .btn-green   { background: var(--green); color: #06382c; }
+  .btn-red     { background: var(--red); color: #3a0a0a; }
+  .btn-full    { width: 100%; }
+
+  /* ── Toggle list (compact horizontal row for tabs) ───────── */
+  .toggle-list { display: flex; flex-direction: column; gap: 6px; }
+  .toggle-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid var(--glass-bd-soft);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    user-select: none;
+    transition: border-color .2s, background .2s;
+  }
+  .toggle-item:hover { border-color: rgba(255,255,255,.55); }
+  .toggle-item.active { border-color: var(--green); background: rgba(54,224,176,.12); }
+  .toggle-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .toggle-icon { display: none; }
+  .toggle-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .toggle-switch {
+    width: 28px; height: 16px;
+    background: rgba(255,255,255,.25);
+    border-radius: 9px;
+    position: relative;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 11px; height: 11px;
+    background: #fff;
+    border-radius: 50%;
+    top: 2.5px; left: 2.5px;
+    transition: left .2s;
+  }
+  .toggle-item.active .toggle-switch { background: var(--green); }
+  .toggle-item.active .toggle-switch::after { left: 14.5px; }
+
+  /* ── Polygon inputs ──────────────────────────────────────── */
+  .poly-group { display: flex; flex-direction: column; gap: 6px; }
+  .poly-label {
+    font-size: 9.5px;
+    color: var(--muted);
+    margin-bottom: 2px;
+    display: block;
+  }
+  .poly-hint { font-size: 9px; color: var(--muted-2); margin-top: 4px; line-height: 1.4; }
+
+  /* ── Right column ──────────────────────────────────────── */
+  .main-area {
+    display: grid;
+    grid-template-rows: 1fr 156px;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  /* Tabs + frame row */
+  .vision-row {
+    display: grid;
+    grid-template-columns: 178px 1fr;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .tabs-col {
+    display: flex;
+    flex-direction: column;
+    padding: 13px 11px;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* ── Frame viewer ─────────────────────────────────────────── */
+  .frame-viewer {
+    position: relative;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #frame-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: none;
+    border-radius: var(--radius-sm);
+  }
+  .frame-placeholder {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.8;
+    padding: 0 20px;
+  }
+  .frame-placeholder .big {
+    display: block; margin: 0 auto 10px;
+    width: 34px; height: 34px;
+    border: 1.5px solid var(--muted);
+    border-radius: 50%;
+    position: relative;
+    opacity: .55;
+  }
+  .frame-placeholder .big::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 10px; height: 8px;
+    transform: translate(-50%,-50%);
+    border-left: 7px solid var(--muted);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+  }
+  .stats-bar {
+    position: absolute;
+    top: 10px; left: 10px;
+    display: flex; gap: 8px;
+    flex-wrap: wrap;
+    z-index: 2;
+  }
+  .stat-chip {
+    background: rgba(20,40,55,.45);
+    border: 1px solid var(--glass-bd-soft);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius-sm);
+    padding: 3px 9px;
+    font-size: 10.5px;
+    color: var(--white);
+  }
+  .stat-chip b { color: #fff; font-weight: 700; }
+
+  /* ── Violation log ─────────────────────────────────────────── */
+  .viol-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .viol-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--glass-bd-soft);
+    flex-shrink: 0;
+  }
+  .viol-header-title { font-size: 10px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+  .viol-count {
+    background: var(--red);
+    color: #3a0a0a;
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+  .viol-list { padding: 7px 8px; display: flex; gap: 7px; overflow-x: auto; overflow-y: hidden; flex: 1; min-height: 0; }
+  .viol-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    background: rgba(255,255,255,.09);
+    border: 1px solid var(--glass-bd-soft);
+    border-left: 2px solid var(--red);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    flex-shrink: 0;
+    min-width: 220px;
+  }
+  .viol-item:hover { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.15); }
+  .viol-thumb {
+    width: 48px; height: 36px;
+    background: rgba(0,0,0,.2);
+    border-radius: 3px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .viol-info { flex: 1; min-width: 0; }
+  .viol-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 3px; }
+  .viol-tag {
+    background: rgba(255,122,122,.18);
+    border: 1px solid rgba(255,122,122,.4);
+    color: #ffd6d6;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .03em;
+  }
+  .viol-meta { font-size: 9.5px; color: var(--muted); }
+
+  /* ── Modal ─────────────────────────────────────────────── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(10,30,40,.55);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: rgba(10,16,22,.78);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-bd);
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 640px;
+    width: 92vw;
+    max-height: 88vh;
+    overflow: auto;
+  }
+  .modal h3 { color: var(--white); margin-bottom: 14px; font-family: var(--font-display); font-weight: 600; }
+  .modal img { width: 100%; border-radius: var(--radius-sm); margin-bottom: 12px; }
+  .modal table { width: 100%; border-collapse: collapse; }
+  .modal td { padding: 5px 8px; border-bottom: 1px solid var(--glass-bd-soft); font-size: 12px; }
+  .modal td:first-child { color: var(--muted); width: 130px; }
+
+  /* ── Toast ─────────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 18px; right: 18px;
+    background: rgba(20,60,80,.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-bd);
+    border-radius: var(--radius-sm);
+    padding: 9px 15px;
+    font-size: 11.5px;
+    opacity: 0;
+    transition: opacity .3s;
+    z-index: 200;
+    max-width: 300px;
+  }
+  #toast.show { opacity: 1; }
+  #toast.ok   { border-left: 3px solid var(--green); }
+  #toast.err  { border-left: 3px solid var(--red); }
+
+  /* ── Scrollbar ─────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.3); border-radius: 3px; }
+
+  h1,h2,h3 { font-family: var(--font-display); }
+</style>
+</head>
+<body>
+
+<!-- ── Bottom ambient glow ─────────────────────────────────────── -->
+<div class="bottom-glow"></div>
+
+<!-- ── Ambient moving box pattern ──────────────────────────────── -->
+<div class="bg-pattern">
+  <div class="pbox" style="width:140px;height:140px;left:4%;top:8%;animation-duration:26s;"></div>
+  <div class="pbox cy" style="width:90px;height:90px;left:14%;top:62%;animation-duration:19s;animation-delay:-4s;"></div>
+  <div class="pbox" style="width:200px;height:200px;left:26%;top:30%;animation-duration:34s;animation-delay:-9s;"></div>
+  <div class="pbox" style="width:70px;height:70px;left:40%;top:78%;animation-duration:16s;animation-delay:-2s;"></div>
+  <div class="pbox cy" style="width:160px;height:160px;left:48%;top:6%;animation-duration:30s;animation-delay:-13s;"></div>
+  <div class="pbox" style="width:110px;height:110px;left:60%;top:48%;animation-duration:22s;animation-delay:-6s;"></div>
+  <div class="pbox" style="width:230px;height:230px;left:68%;top:14%;animation-duration:38s;animation-delay:-17s;"></div>
+  <div class="pbox cy" style="width:80px;height:80px;left:78%;top:70%;animation-duration:18s;animation-delay:-3s;"></div>
+  <div class="pbox" style="width:130px;height:130px;left:86%;top:32%;animation-duration:27s;animation-delay:-11s;"></div>
+  <div class="pbox" style="width:60px;height:60px;left:8%;top:42%;animation-duration:15s;animation-delay:-7s;"></div>
+  <div class="pbox cy" style="width:170px;height:170px;left:34%;top:-4%;animation-duration:32s;animation-delay:-20s;"></div>
+  <div class="pbox" style="width:95px;height:95px;left:92%;top:6%;animation-duration:20s;animation-delay:-5s;"></div>
+</div>
+
+<!-- ── Header ──────────────────────────────────────────────────── -->
+<header>
+  <div class="logo-mark">GL</div>
+  <div class="logo-text">
+    <span class="name">Gridlock</span>
+    <span class="sub">Control Panel</span>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" id="dot"></div>
+    <span id="status-label">Disconnected</span>
+  </div>
+</header>
+
+<!-- ── Layout ──────────────────────────────────────────────────── -->
+<div class="layout">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar glass">
+
+    <!-- Connect -->
+    <div>
+      <div class="section-title">1 · Connect to Colab</div>
+      <div class="connect-row">
+        <input type="text" id="colab-url" placeholder="https://xxxx.ngrok.io" />
+        <button class="btn-accent" onclick="connectColab()">Connect</button>
+      </div>
+      <p class="poly-hint">Paste the ngrok URL printed by the API cell in your Colab notebook.</p>
+    </div>
+
+    <!-- Video path -->
+    <div>
+      <div class="section-title">2 · Video path <em>(on Colab)</em></div>
+      <input type="text" id="video-path"
+             value="/content/drive/MyDrive/video for emerald/example 1.mp4"
+             placeholder="/content/drive/MyDrive/..." />
+    </div>
+
+    <!-- Max frames -->
+    <div>
+      <div class="section-title">3 · Max frames to process</div>
+      <input type="number" id="max-frames" value="2000" min="100" step="100" style="width:120px" />
+    </div>
+
+    <!-- Polygon coords -->
+    <div style="min-height:0;">
+      <div class="section-title">4 · Zone coordinates <em>(optional)</em></div>
+      <div class="poly-group">
+        <div>
+          <label class="poly-label">Lane A polygon</label>
+          <textarea id="lane-a" rows="2" placeholder='[[193,1439],[1004,1],...]'></textarea>
+        </div>
+        <div>
+          <label class="poly-label">Lane B polygon</label>
+          <textarea id="lane-b" rows="2" placeholder='[[967,0],[78,1439],...]'></textarea>
+        </div>
+        <div>
+          <label class="poly-label">Parking zone</label>
+          <textarea id="parking-zone" rows="2" placeholder='[[1319,34],[1259,30],...]'></textarea>
+        </div>
+        <div>
+          <label class="poly-label">Lane A stop line</label>
+          <textarea id="stop-a" rows="1" placeholder='[[128,1152],...]'></textarea>
+        </div>
+        <div>
+          <label class="poly-label">Lane B stop line</label>
+          <textarea id="stop-b" rows="1" placeholder='[[1536,1152],...]'></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;flex-direction:column;gap:7px;margin-top:auto;padding-top:4px;">
+      <button class="btn-green btn-full" onclick="sendConfig()" id="btn-send" disabled>
+        Send Config to Colab
+      </button>
+      <button class="btn-accent btn-full" onclick="startPipeline()" id="btn-start" disabled>
+        Start Pipeline
+      </button>
+      <button class="btn-ghost btn-full" onclick="refreshViolations()">
+        Refresh Violations
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ── Main area ────────────────────────────────────────────── -->
+  <div class="main-area">
+
+    <div class="vision-row">
+
+      <!-- Detection tabs, side by side with display -->
+      <div class="tabs-col glass">
+        <div class="section-title">Detection features</div>
+        <div class="toggle-list" id="toggle-list">
+          <div class="toggle-item active" data-key="enable_helmet" onclick="toggleFeature(this)">
+            <div class="toggle-label"><span class="toggle-name">Helmet Check</span></div>
+            <div class="toggle-switch"></div>
+          </div>
+          <div class="toggle-item active" data-key="enable_wrong_side" onclick="toggleFeature(this)">
+            <div class="toggle-label"><span class="toggle-name">Wrong-Side Driving</span></div>
+            <div class="toggle-switch"></div>
+          </div>
+          <div class="toggle-item active" data-key="enable_no_parking" onclick="toggleFeature(this)">
+            <div class="toggle-label"><span class="toggle-name">No-Parking Zone</span></div>
+            <div class="toggle-switch"></div>
+          </div>
+          <div class="toggle-item active" data-key="enable_stop_line" onclick="toggleFeature(this)">
+            <div class="toggle-label"><span class="toggle-name">Stop-Line / Red Light</span></div>
+            <div class="toggle-switch"></div>
+          </div>
+          <div class="toggle-item active" data-key="enable_triple_riding" onclick="toggleFeature(this)">
+            <div class="toggle-label"><span class="toggle-name">Triple Riding</span></div>
+            <div class="toggle-switch"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live frame -->
+      <div class="frame-viewer glass">
+        <div class="stats-bar" id="stats-bar" style="display:none">
+          <div class="stat-chip">FPS <b id="s-fps">—</b></div>
+          <div class="stat-chip">Frames <b id="s-frames">—</b></div>
+          <div class="stat-chip">Violations <b id="s-viols">—</b></div>
+          <div class="stat-chip">Light <b id="s-light">—</b></div>
+        </div>
+        <div class="frame-placeholder" id="placeholder">
+          <span class="big"></span>
+          Connect to Colab and start the pipeline<br/>to see the live annotated feed here.
+        </div>
+        <img id="frame-img" alt="Live feed" />
+      </div>
+
+    </div>
+
+    <!-- Violation log -->
+    <div class="viol-panel glass">
+      <div class="viol-header">
+        <span class="viol-header-title">Violations</span>
+        <span class="viol-count" id="viol-count">0</span>
+      </div>
+      <div class="viol-list" id="viol-list">
+        <div style="padding:10px 16px;color:var(--muted);font-size:11.5px;">
+          No violations yet. Start the pipeline to begin detection.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main-area -->
+</div><!-- end layout -->
+
+<!-- ── Evidence modal ────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <h3 id="modal-title">Evidence Frame</h3>
+    <img id="modal-img" src="" alt="Evidence" />
+    <table id="modal-table"></table>
+    <br/>
+    <button class="btn-ghost" onclick="document.getElementById('modal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<!-- ── Toast ─────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   State
+═══════════════════════════════════════════════════════════ */
+let BASE_URL     = "";
+let connected    = false;
+let polling      = false;
+let pollInterval = null;
+let frameInterval= null;
+let knownViolIds = new Set();
+
+/* ═══════════════════════════════════════════════════════════
+   Central fetch wrapper — adds ngrok bypass header to EVERY call
+   This is the fix for "failed to connect": ngrok shows a browser
+   warning page by default. Sending this header skips it.
+═══════════════════════════════════════════════════════════ */
+function api(path, options = {}) {
+  const headers = {
+    "ngrok-skip-browser-warning": "true",  // ← bypass ngrok interstitial
+    ...(options.headers || {}),
+  };
+  return fetch(BASE_URL + path, { ...options, headers });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Utilities
+═══════════════════════════════════════════════════════════ */
+function toast(msg, type = "ok") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className   = "show " + type;
+  setTimeout(() => el.className = "", 3000);
+}
+
+function parsePolygon(str) {
+  str = str.trim();
+  if (!str) return [];
+  try { return JSON.parse(str); }
+  catch(e) {
+    toast("Invalid JSON in polygon field: " + e.message, "err");
+    return null;
+  }
+}
+
+function setDot(state) {
+  const dot = document.getElementById("dot");
+  const lbl = document.getElementById("status-label");
+  dot.className = "status-dot " + state;
+  lbl.textContent = { "": "Disconnected", live: "Connected", running: "Running" }[state] || state;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Toggle feature checkboxes
+═══════════════════════════════════════════════════════════ */
+function toggleFeature(el) {
+  el.classList.toggle("active");
+}
+
+function getFeatures() {
+  const items = document.querySelectorAll("#toggle-list .toggle-item");
+  const out = {};
+  items.forEach(el => {
+    out[el.dataset.key] = el.classList.contains("active");
+  });
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Connect
+═══════════════════════════════════════════════════════════ */
+async function connectColab() {
+  let url = document.getElementById("colab-url").value.trim();
+  if (!url) { toast("Enter the ngrok URL first", "err"); return; }
+  if (url.endsWith("/")) url = url.slice(0, -1);
+  BASE_URL = url;
+  try {
+    const r = await api("/", { signal: AbortSignal.timeout(7000) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    connected = true;
+    setDot("live");
+    document.getElementById("btn-send").disabled  = false;
+    document.getElementById("btn-start").disabled = false;
+    toast("Connected to Colab", "ok");
+    startPolling();
+  } catch(e) {
+    let msg = e.message || "Unknown error";
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      msg = "Cannot reach Colab. Check: (1) ngrok URL is correct, (2) API cell ran in Colab, (3) no typo in the URL";
+    } else if (msg.includes("timeout")) {
+      msg = "Connection timed out — is Colab still running?";
+    }
+    toast("Connection failed: " + msg, "err");
+    setDot("");
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Send config
+═══════════════════════════════════════════════════════════ */
+async function sendConfig() {
+  if (!connected) { toast("Connect to Colab first", "err"); return; }
+
+  const features = getFeatures();
+
+  const laneA  = parsePolygon(document.getElementById("lane-a").value);
+  const laneB  = parsePolygon(document.getElementById("lane-b").value);
+  const park   = parsePolygon(document.getElementById("parking-zone").value);
+  const stopA  = parsePolygon(document.getElementById("stop-a").value);
+  const stopB  = parsePolygon(document.getElementById("stop-b").value);
+  if (laneA===null||laneB===null||park===null||stopA===null||stopB===null) return;
+
+  const payload = {
+    ...features,
+    lane_a:           laneA,
+    lane_b:           laneB,
+    parking_zones:    park.length ? [park] : [],
+    lane_a_stop_line: stopA,
+    lane_b_stop_line: stopB,
+    video_path:       document.getElementById("video-path").value.trim(),
+    max_frames:       parseInt(document.getElementById("max-frames").value) || 2000,
+  };
+
+  try {
+    const r = await api("/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    toast("Config sent", "ok");
+  } catch(e) {
+    toast("Send failed: " + e.message, "err");
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Start pipeline
+═══════════════════════════════════════════════════════════ */
+async function startPipeline() {
+  if (!connected) { toast("Connect to Colab first", "err"); return; }
+  await sendConfig();    // always push config before starting
+  try {
+    const r = await api("/start", { method: "POST" });
+    const d = await r.json();
+    if (d.ok) {
+      toast("Pipeline started", "ok");
+      setDot("running");
+      startFramePoll();
+    } else {
+      toast(d.reason || "Could not start", "err");
+    }
+  } catch(e) {
+    toast("Start failed: " + e.message, "err");
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Status polling
+═══════════════════════════════════════════════════════════ */
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(pollStatus, 3000);
+}
+
+async function pollStatus() {
+  if (!connected) return;
+  try {
+    const r = await api("/status", { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    document.getElementById("s-fps").textContent    = d.current_fps ?? "—";
+    document.getElementById("s-frames").textContent = d.processed_frames ?? "—";
+    document.getElementById("s-viols").textContent  = d.violations_count ?? "—";
+    document.getElementById("s-light").textContent  = d.light_color ?? "—";
+    document.getElementById("stats-bar").style.display = "flex";
+    document.getElementById("viol-count").textContent  = d.violations_count ?? 0;
+    if (d.running) setDot("running"); else if (connected) setDot("live");
+    if (d.running) refreshViolations();
+  } catch(_) {}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Live frame polling
+═══════════════════════════════════════════════════════════ */
+function startFramePoll() {
+  if (frameInterval) clearInterval(frameInterval);
+  frameInterval = setInterval(fetchFrame, 1200);
+}
+
+async function fetchFrame() {
+  if (!connected) return;
+  try {
+    const r = await api("/frame", { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return;
+    const d = await r.json();
+    const img = document.getElementById("frame-img");
+    img.src = "data:image/jpeg;base64," + d.frame_b64;
+    img.style.display = "block";
+    document.getElementById("placeholder").style.display = "none";
+  } catch(_) {}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Violations
+═══════════════════════════════════════════════════════════ */
+async function refreshViolations() {
+  if (!connected) return;
+  try {
+    const r = await api("/violations", { signal: AbortSignal.timeout(5000) });
+    const d = await r.json();
+    renderViolations(d.violations || []);
+    document.getElementById("viol-count").textContent = d.total || 0;
+  } catch(_) {}
+}
+
+function renderViolations(rows) {
+  const list = document.getElementById("viol-list");
+  if (!rows.length) {
+    list.innerHTML = '<div style="padding:10px 16px;color:var(--muted);font-size:11.5px;">No violations detected yet.</div>';
+    return;
+  }
+  // Only append new rows
+  const newRows = rows.filter(r => !knownViolIds.has(r.id));
+  if (!newRows.length) return;
+
+  if (knownViolIds.size === 0) list.innerHTML = "";
+
+  newRows.forEach(v => {
+    knownViolIds.add(v.id);
+    const tags = v.violations.map(t =>
+      `<span class="viol-tag">${t.replace(/_/g," ")}</span>`
+    ).join("");
+    const item = document.createElement("div");
+    item.className = "viol-item";
+    item.innerHTML = `
+      <img class="viol-thumb" src="" alt="" id="thumb-${v.id}" />
+      <div class="viol-info">
+        <div class="viol-tags">${tags}</div>
+        <div class="viol-meta">
+          ID ${v.track_id} · ${v.class} · t=${v.timestamp}s
+          ${v.plate ? '· <b>' + v.plate + '</b>' : ''}
+          · conf ${v.confidence}
+        </div>
+      </div>`;
+    item.onclick = () => openEvidence(v);
+    list.prepend(item);
+    // Load thumbnail
+    if (v.evidence) {
+      api("/evidence/" + v.evidence)
+        .then(r => r.json())
+        .then(d => {
+          const t = document.getElementById("thumb-" + v.id);
+          if (t) t.src = "data:image/jpeg;base64," + d.frame_b64;
+        }).catch(()=>{});
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Evidence modal
+═══════════════════════════════════════════════════════════ */
+async function openEvidence(v) {
+  document.getElementById("modal-title").textContent =
+    "Evidence · " + v.violations.join(", ").replace(/_/g," ");
+  document.getElementById("modal-img").src = "";
+  const rows = [
+    ["Track ID",    v.track_id],
+    ["Vehicle",     v.class],
+    ["Violations",  v.violations.join(", ").replace(/_/g," ")],
+    ["Timestamp",   v.timestamp + "s"],
+    ["Frame",       v.frame_idx],
+    ["Plate",       v.plate || "N/A"],
+    ["Confidence",  v.confidence],
+  ];
+  document.getElementById("modal-table").innerHTML =
+    rows.map(([k,val]) => `<tr><td>${k}</td><td>${val}</td></tr>`).join("");
+  document.getElementById("modal").classList.add("open");
+
+  if (v.evidence) {
+    try {
+      const r = await api("/evidence/" + v.evidence);
+      const d = await r.json();
+      document.getElementById("modal-img").src = "data:image/jpeg;base64," + d.frame_b64;
+    } catch(_) {}
+  }
+}
+
+function closeModal(e) {
+  if (e.target.id === "modal")
+    document.getElementById("modal").classList.remove("open");
+}
+
+/* ── Init ── */
+document.addEventListener("DOMContentLoaded", () => {
+  // Try to auto-connect if URL already in box
+  const url = document.getElementById("colab-url").value.trim();
+  if (url) connectColab();
+});
+</script>
+</body>
+</html>
