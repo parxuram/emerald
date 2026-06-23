@@ -1,0 +1,22 @@
+# ── Core detection & tracking ─────────────────────────────────────────────────
+ultralytics
+supervision
+opencv-python          # swap for opencv-python-headless in server/Docker environments
+torch                  # install the CUDA variant separately if not on Colab
+
+# ── OCR ───────────────────────────────────────────────────────────────────────
+easyocr
+
+# ── Data & visualisation (prototype.ipynb) ────────────────────────────────
+numpy
+pandas
+matplotlib
+ipywidgets             # FileUpload widget; requires `jupyter nbextension enable --py widgetsnbextension`
+scikit-learn           # evaluate_performance / classification_report
+
+# ── REST API & tunnel (mock dashboard(frontend)) ─────────────────────────────────
+fastapi
+uvicorn[standard]
+pyngrok==6.0.0         # pinned — newer versions changed the tunnel API
+python-multipart
+pydantic
