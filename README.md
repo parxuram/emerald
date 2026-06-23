@@ -492,12 +492,11 @@ EMERALD's modular architecture is designed to integrate with broader urban mobil
 
 | Field | Details |
 |---|---|
-| **Team Name** | `[Team Name]` |
-| **Members** | `[Member 1]` · `[Member 2]` · `[Member 3]` · `[Member 4]` |
-| **Contact** | `[team@email.com]` |
-| **Repository** | `[https://github.com/your-org/emerald]` |
-| **Demo Video** | `[Link to demo footage]` |
-| **Submission** | Hackathon Submission — `[Event Name]`, `[Date]` |
+| **Team Name** | `[KOMET]` |
+| **Members** | `[MOHIT SEN]` · `[PARTHA PROTIM DEORI]` · `[MANISH ORAON]` · `[RAJ SAHA]` |
+| **Contact** | `[mohitsen_ug_24@ei.nits.ac.in]` |
+| **Repository** | `[https://github.com/parxuram/emerald]` |
+| **Submission** | Hackathon Submission — `[GRIDLOCK 2.0]`|
 
 ---
 
