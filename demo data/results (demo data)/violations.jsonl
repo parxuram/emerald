@@ -1,0 +1,5 @@
+{"id": 1, "track_id": 10, "class": "motorcycle", "violations": ["no_helmet"], "timestamp": 18.16, "frame_idx": 454, "plate": "", "confidence": 0.67, "evidence": "viol_0001_id10_f454.jpg"}
+{"id": 2, "track_id": 50017, "class": "bus", "violations": ["illegal_parking"], "timestamp": 21.44, "frame_idx": 536, "plate": "FON", "confidence": 0.917, "evidence": "viol_0002_id50017_f536.jpg"}
+{"id": 3, "track_id": 50025, "class": "car", "violations": ["illegal_parking"], "timestamp": 29.12, "frame_idx": 728, "plate": "", "confidence": 0.594, "evidence": "viol_0003_id50025_f728.jpg"}
+{"id": 4, "track_id": 50029, "class": "truck", "violations": ["illegal_parking"], "timestamp": 33.52, "frame_idx": 838, "plate": "", "confidence": 0.923, "evidence": "viol_0004_id50029_f838.jpg"}
+{"id": 5, "track_id": 50027, "class": "car", "violations": ["illegal_parking"], "timestamp": 38.88, "frame_idx": 972, "plate": "", "confidence": 0.77, "evidence": "viol_0005_id50027_f972.jpg"}
